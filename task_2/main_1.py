@@ -8,7 +8,7 @@ def select(P, P_eval, q, model_type):
     P_eval = P_eval[P_eval.argsort()]
     ranks = np.arange(P_len)
     match model_type:
-        case "roulette": 
+        case "roulette":
             e = P_eval[-1] - P_eval + 1
             probs = e / np.sum(e)
         case "linear":
@@ -29,9 +29,16 @@ def crossover(p1, p2, p = 0.8):
         return c1, c2
     return p1, p2
 
-def mutate(I, a, b, t, T, beta = 3, p = 0.8): #beta \in [3, 5]
+def sigmoid(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+delta_history = []
+def mutate(I, a, b, t, T, beta = 5, p = 0.8): #beta \in [3, 5]
     if np.random.rand() < p:
-        delta = (1 - np.random.rand()**((1-t/T)*beta))*(b-a)
+        #delta = (1 - np.random.rand()**((1-t/T)*beta))*(b-a)
+        scale, loc = 30, -15
+        delta = (1 - sigmoid(t/T*2*scale - scale - loc))*(b-a)
+        delta_history.append(delta)                
         #
         mp = np.random.randint(len(I))
         lb = np.maximum(a, I[mp] - delta)
@@ -48,7 +55,7 @@ def ga(conf):
     pem, inc = np.inf, 0 #P_eval_min, iter_no_change
     P_eval_stats = {"max" : [], "min" : [], "mean" : []}
     for i in range(conf.MAX_ITER):
-        #print(f"{i + 1}/{conf.MAX_ITER}")
+        print(f"{i + 1}/{conf.MAX_ITER}")
         new_P = list(P[P_eval.argsort()][:conf.elit_num])
         for j in range(int((conf.P_SIZE-conf.elit_num)/2)):
             p1, p2 = select(P, P_eval, conf.q, conf.SELECT_MODEL_TYPE)
@@ -56,11 +63,12 @@ def ga(conf):
             new_P += [mutate(I, conf.a, conf.b, i, conf.MAX_ITER) for I in [c1, c2]]
         if (conf.P_SIZE - conf.elit_num) % 2 != 0 : new_P += P[-1]
         P = np.array(new_P)
-
         P_eval = np.apply_along_axis(conf.f, 1, P)
+        
         P_eval_stats["min"].append(P_eval.min())
         P_eval_stats["max"].append(P_eval.max())
         P_eval_stats["mean"].append(P_eval.mean())
+        
         npem = min(P_eval) #new_P_eval_min
         pem, inc = (pem, inc+1) if npem == pem else (npem, 0)
         if conf.MAX_ITER_NO_CHANGE < inc: break
@@ -73,41 +81,23 @@ def main():
     conf.dim_num = 2
     conf.f = lambda x: np.sum((x - np.arange(conf.dim_num) + 1)**2)
     conf.a, conf.b = -conf.dim_num, conf.dim_num
-    conf.MAX_ITER, conf.MAX_ITER_NO_CHANGE = (100,)*2
+    conf.MAX_ITER, conf.MAX_ITER_NO_CHANGE = (500,)*2
     conf.I_SIZE, conf.P_SIZE = conf.dim_num, 100
     conf.elit_num = int(0.3*conf.P_SIZE)
-    #conf.q = 1.5/conf.P_SIZE
-    #conf.q = 0.5
-    #conf.SELECT_MODEL_TYPE = "roulette"
+    conf.q = 1.5/conf.P_SIZE #linear
+    #conf.q = 0.5 #non_linear
+    conf.SELECT_MODEL_TYPE = "linear"
+
+    P, P_eval_stats = ga(conf)
+    print(f"f(x*) = {P_eval_stats['min'][-1]}")    
+    fig, (ax1, ax2) = plt.subplots(1, 2)
     
-    #PLOT1
-    fig, ax = plt.subplots()
-    for SMT in ["roulette", "linear", "non_linear"]:
-        conf.SELECT_MODEL_TYPE = SMT 
-        conf.q = 1.5/conf.P_SIZE if SMT == "linear" else 0.5
-        P, P_eval_stats = ga(conf)
-        ax.semilogy(P_eval_stats["min"], label=SMT)
-    ax.set_xlabel("iteration")
-    ax.set_ylabel("eval")
-    ax.legend()
+    ax1.semilogy(P_eval_stats["min"])
+    ax1.semilogy(P_eval_stats["max"])
+    ax1.semilogy(P_eval_stats["mean"])
+    
+    ax2.plot(delta_history)
     plt.show()
-    
-    #PLOT2
-    #conf.MAX_ITER_SIZE = 10
-    #conf.SELECT_MODEL_TYPE = "linear"
-    #fig, ax = plt.subplots()
-    #P_eval_min_ = []
-    #q_ = np.linspace(1, 2, 100)/conf.P_SIZE
-    #for q in q_:
-        #print(f"q = {q}")
-        #conf.q = q 
-        #P, P_eval_stats = ga(conf)
-        #P_eval_min_.append(P_eval_stats["min"][-1])
-    #ax.semilogy(q_, P_eval_min_)
-    #ax.set_xlabel("q")
-    #ax.set_ylabel("eval")
-    #ax.legend()
-    #plt.show()
     
 if __name__ == "__main__":
     main()
