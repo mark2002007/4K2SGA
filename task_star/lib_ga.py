@@ -31,25 +31,33 @@ def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-x))
 
 delta_history = []
-def mutate(I, a, b, t, T, beta = 5, p = 0.8): #beta \in [3, 5]
+
+def mutate_sigmoid(I, a, b, t, T, p, scale, loc):
     if np.random.rand() < p:
-        #delta = (1 - np.random.rand()**((1-t/T)*beta))*(b-a)
-        scale, loc = 30, -15
         delta = (1 - sigmoid(t/T*2*scale - scale - loc))*(b-a)
-        delta_history.append(delta)                
-        #
         mp = np.random.randint(len(I))
         lb = np.maximum(a, I[mp] - delta)
         ub = np.minimum(b, I[mp] + delta)
         new_I = I.copy()
         new_I[mp] = np.random.uniform(lb, ub)
-        return new_I
-    return I.copy()
+        return new_I, delta
+    return I.copy(), None
+
+def mutate_nonuniform(I, a, b, t, T, beta = 5, p = 0.8): #beta \in [3, 5]
+    if np.random.rand() < p:
+        delta = (1 - np.random.rand()**((1-t/T)*beta))*(b-a)
+        mp = np.random.randint(len(I))
+        lb = np.maximum(a, I[mp] - delta)
+        ub = np.minimum(b, I[mp] + delta)
+        new_I = I.copy()
+        new_I[mp] = np.random.uniform(lb, ub)
+        return new_I, delta
+    return I.copy(), None
 
 def ga(conf):
     #
     P = np.random.uniform(conf.a, conf.b, size=(conf.P_SIZE, conf.I_SIZE))
-    P_eval = np.apply_along_axis(conf.f, 1, P)
+    P_eval = np.apply_along_axis(conf.f, 1, P).flatten()
     pem, inc = np.inf, 0 #P_eval_min, iter_no_change
     P_eval_stats = {"max" : [], "min" : [], "mean" : []}
     for i in range(conf.MAX_ITER):
@@ -59,10 +67,12 @@ def ga(conf):
             p1, p2 = select(P, P_eval, conf.q, conf.SELECT_MODEL_TYPE)
             c1, c2 = crossover(p1, p2)
             new_P += [mutate(I, conf.a, conf.b, i, conf.MAX_ITER) for I in [c1, c2]]
-        if (conf.P_SIZE - conf.elit_num) % 2 != 0 : new_P += P[-1]
+        if (conf.P_SIZE - conf.elit_num) % 2 != 0 : 
+            new_P.append(P[-1])
+    
         P = np.array(new_P)
-        P_eval = np.apply_along_axis(conf.f, 1, P)
-        
+        P_eval = np.apply_along_axis(conf.f, 1, P).flatten()
+    
         P_eval_stats["min"].append(P_eval.min())
         P_eval_stats["max"].append(P_eval.max())
         P_eval_stats["mean"].append(P_eval.mean())
@@ -71,5 +81,4 @@ def ga(conf):
         pem, inc = (pem, inc+1) if npem == pem else (npem, 0)
         if conf.MAX_ITER_NO_CHANGE < inc: break
         
-    return P, P_eval_stats
-
+    return P_eval_stats

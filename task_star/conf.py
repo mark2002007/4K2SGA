@@ -8,4 +8,8 @@ conf.elit_num = int(0.3*conf.P_SIZE)
 conf.q = 1.5/conf.P_SIZE #linear
 #conf.q = 0.5 #non_linear
 conf.SELECT_MODEL_TYPE = "linear"
+#
+conf.SCALE = 15
+conf.loc = -10
+#
 
