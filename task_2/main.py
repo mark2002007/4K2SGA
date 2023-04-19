@@ -81,35 +81,35 @@ def main():
     #conf.SELECT_MODEL_TYPE = "roulette"
 
     #PLOT1
-    #fig, ax = plt.subplots()
-    #for SMT in ["roulette", "linear", "non_linear"]:
-        #print(SMT)
-        #conf.SELECT_MODEL_TYPE = SMT 
-        #conf.q = 1.5/conf.P_SIZE if SMT == "linear" else 0.3
-        #P_eval_stats = ga(conf)
-        #ax.semilogy(P_eval_stats["min"], label=SMT)
-    #print(f"f(x*) = {P_eval_stats['min'][-1]}")
-    #ax.set_xlabel("iteration")
-    #ax.set_ylabel("eval")
-    #ax.legend()
-    #plt.show()
-    
-    #PLOT2
-    conf.MAX_ITER = 250
-    conf.SELECT_MODEL_TYPE = "linear"
     fig, ax = plt.subplots()
-    P_eval_min_ = []
-    q_ = np.linspace(1, 2, 15)/conf.P_SIZE
-    for q in q_:
-        print(f"q = {q}")
-        conf.q = q 
+    for SMT in ["roulette", "linear", "non_linear"]:
+        print(SMT)
+        conf.SELECT_MODEL_TYPE = SMT 
+        conf.q = 1.5/conf.P_SIZE if SMT == "linear" else 0.3
         P_eval_stats = ga(conf)
-        P_eval_min_.append(P_eval_stats["min"][-1])
-    ax.semilogy(q_, P_eval_min_)
-    ax.set_xlabel("q")
+        ax.semilogy(P_eval_stats["min"], label=SMT)
+    print(f"f(x*) = {P_eval_stats['min'][-1]}")
+    ax.set_xlabel("iteration")
     ax.set_ylabel("eval")
     ax.legend()
     plt.show()
+    
+    #PLOT2
+#    conf.MAX_ITER = 250
+#    conf.SELECT_MODEL_TYPE = "linear"
+#    fig, ax = plt.subplots()
+#    P_eval_min_ = []
+#    q_ = np.linspace(1, 2, 15)/conf.P_SIZE
+#    for q in q_:
+#        print(f"q = {q}")
+#        conf.q = q 
+#        P_eval_stats = ga(conf)
+#        P_eval_min_.append(P_eval_stats["min"][-1])
+#    ax.semilogy(q_, P_eval_min_)
+#    ax.set_xlabel("q")
+#    ax.set_ylabel("eval")
+#    ax.legend()
+#    plt.show()
     
 if __name__ == "__main__":
     main()
